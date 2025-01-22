@@ -31,6 +31,11 @@ leftMotor.setVelocity(0.0)
 rightMotor.setVelocity(0.0)
 
 
+lidar = robot.getDevice('LDS-01')
+lidar.enable(timestep)
+lidar.enablePointCloud()
+
+
   
 # enable sensors
 gs = []
