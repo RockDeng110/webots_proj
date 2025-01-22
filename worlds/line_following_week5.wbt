@@ -471,6 +471,10 @@ Robot {
   translation 0 0.028 0
   rotation 0 0 1 1.5707996938995747
   children [
+    Display {
+      width 300
+      height 300
+    }
     HingeJoint {
       jointParameters HingeJointParameters {
         axis 0 1 0

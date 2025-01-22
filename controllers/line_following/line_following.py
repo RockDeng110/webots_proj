@@ -35,8 +35,8 @@ lidar = robot.getDevice('LDS-01')
 lidar.enable(timestep)
 lidar.enablePointCloud()
 
-
-  
+display = robot.getDevice('display')
+       
 # enable sensors
 gs = []
 gsNames = [
