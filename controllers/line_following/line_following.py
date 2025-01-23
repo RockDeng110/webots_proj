@@ -65,12 +65,15 @@ else:
     print(f"LIDAR range image lens: {len(ranges)}")
     print(f"LIDAR range image: {ranges}")
 
-
 angles = np.linspace(3.1415, -3.1415, 360)
+
+"""
+# plot test
 
 fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})       
 ax.plot(angles,ranges,'.')
 plt.show()
+"""
 
 
 
@@ -188,7 +191,24 @@ while robot.step(timestep) != -1:
                      
     leftMotor.setVelocity(phildot)
     rightMotor.setVelocity(phirdot)
-    pass
-
+    
+    
+    # lidar related
+    ranges = lidar.getRangeImage()
+    x_r, y_r = [], [] # coordinates in robot's system
+    x_w, y_w = [], [] # coordinates in world's system
+    for i, angle in enumerate(angles):
+        x_i = ranges[i]*np.cos(angle)
+        y_i = ranges[i]*np.sin(angle)
+        x_r.append(x_i)
+        y_r.append(y_i)
+        x_w.append(x_i*np.cos(omegaz) - y_i*np.sin(omegaz) + xw)
+        y_w.append(x_i*np.sin(omegaz) + y_i*np.cos(omegaz) + yw)
+    
+    plt.ion()
+    # plt.plot(x_r, y_r, '.') # plot points in robot's coordinates system   
+    plt.plot(x_w, y_w, '.')  # plot points in world's coordinates system
+    plt.pause(0.01)
+    plt.show()
 
 # Enter here exit cleanup code.
