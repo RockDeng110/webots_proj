@@ -4,6 +4,9 @@
 #  from controller import Robot, Motor, DistanceSensor
 from controller import Robot
 import numpy as np
+from matplotlib import pyplot as plt
+
+
 
 # create the Robot instance.
 robot = Robot()
@@ -31,6 +34,14 @@ leftMotor.setVelocity(0.0)
 rightMotor.setVelocity(0.0)
 
 
+
+
+
+
+
+
+
+# Lidar related
 lidar = robot.getDevice('LDS-01')
 lidar.enable(timestep)
 lidar.enablePointCloud()
@@ -53,6 +64,19 @@ if ranges is None or len(ranges) == 0:
 else:
     print(f"LIDAR range image lens: {len(ranges)}")
     print(f"LIDAR range image: {ranges}")
+
+
+angles = np.linspace(3.1415, -3.1415, 360)
+
+fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})       
+ax.plot(angles,ranges,'.')
+plt.show()
+
+
+
+
+
+
 
 
 
