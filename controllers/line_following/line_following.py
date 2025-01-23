@@ -35,6 +35,31 @@ lidar = robot.getDevice('LDS-01')
 lidar.enable(timestep)
 lidar.enablePointCloud()
 
+
+# Allow LIDAR to warm up
+for _ in range(10):  # Wait for 10 simulation steps
+    robot.step(timestep)
+
+
+# Wait for the LIDAR to initialize
+if lidar.getNumberOfPoints() == 0:
+    print("LIDAR initialization failed: No points available.")
+else:
+    print("LIDAR initialized successfully.")
+
+ranges = lidar.getRangeImage()
+if ranges is None or len(ranges) == 0:
+    print("Error: LIDAR range image is empty or not accessible.")
+else:
+    print(f"LIDAR range image lens: {len(ranges)}")
+    print(f"LIDAR range image: {ranges}")
+
+
+
+
+
+
+
 display = robot.getDevice('display')
        
 # enable sensors
