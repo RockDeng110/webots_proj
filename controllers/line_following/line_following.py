@@ -200,7 +200,8 @@ map_indices = world2map(xw, yw)
 print(f"Map indices: {map_indices}")
 
 
-
+# Create a probabilistic occupancy grid map (300x300) initialized to zero
+map = np.zeros((300, 300))
 
 # Main loop:
 # - perform simulation steps until Webots is stopping the controller
@@ -301,9 +302,24 @@ while robot.step(timestep) != -1:
 
                 # Display pixel
                 #print(f"Drawing pixel at ({x_w_s}, {y_w_s})")
-                display.setColor(0xFFFFFF)
+                #display.setColor(0xFFFFFF)
+                #px, py = world2map(x_w_s, y_w_s)
+                #display.drawPixel(px,py)
+
+                
+                # Convert world coordinates to map indices
                 px, py = world2map(x_w_s, y_w_s)
-                display.drawPixel(px,py)
+
+                # Increment probability (up to 1)
+                map[px, py] = min(1, map[px, py] + 0.01)
+
+                # Convert probability to grayscale (0-255)
+                v = int(map[px, py] * 255)
+                color = v * 256**2 + v * 256 + v  # Convert to 24-bit color
+
+                # Display the pixel
+                display.setColor(color)
+                display.drawPixel(px, py)
             except Exception as e:
                 print(f"Error at index {i}: {e}")
                 continue
