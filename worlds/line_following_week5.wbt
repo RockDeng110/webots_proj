@@ -2000,6 +2000,10 @@ Robot {
     DEF TURRET_SLOT Pose {
       translation -0.0095 0 0.0486
       children [
+        Compass {
+        }
+        GPS {
+        }
         RobotisLds01 {
         }
       ]

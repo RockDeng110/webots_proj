@@ -37,8 +37,12 @@ rightMotor.setVelocity(0.0)
 
 
 
+# add gps and compass
+gps = robot.getDevice('gps')
+gps.enable(timestep)
 
-
+compass = robot.getDevice('compass')
+compass.enable(timestep)
 
 
 # Lidar related
@@ -88,6 +92,7 @@ plt.show()
 
 
 display = robot.getDevice('display')
+display.setColor(0xFF0000)
        
 # enable sensors
 gs = []
@@ -128,8 +133,8 @@ def determine_direction(gsensors):
         white_or_black[0] = "black"
         white_or_black[1] = "black"
         white_or_black[2] = "black"
-    print(gsensors)
-    print(white_or_black)
+    # print(gsensors)
+    # print(white_or_black)
     
     # determin robot should go straight, turn left or turn right
     if (white_or_black[0] == "white" and white_or_black[1] == "black" and white_or_black[2] == "white"):
@@ -147,6 +152,53 @@ def determine_direction(gsensors):
         print("unexpected state!!!!!!!!!!!!!!!!!!!!!!!")
         return "unexpected state"
 
+USE_GPS_AND_COMPASS = 1
+# calculate xw, yw and omegaz
+def calculate_robots_pose_in_world():
+    global xw, yw, omegaz, delta_distance, delta_omegaz, delta_x
+    if USE_GPS_AND_COMPASS == 1:
+        xw = gps.getValues()[0]
+        yw = gps.getValues()[1]
+        omegaz=np.arctan2(compass.getValues()[0],compass.getValues()[1])
+   
+    else:
+        delta_x = (phildot + phirdot) * r * delta_time / 2
+        delta_omegaz = (phirdot - phildot) * r * delta_time / d
+        delta_distance += delta_x
+        xw = xw + np.cos(omegaz)*delta_x
+        yw = yw + np.sin(omegaz)*delta_x
+        omegaz += delta_omegaz  
+
+def world2map(xw, yw, map_width=300, map_height=300, 
+              world_min_x=-0.195, world_max_x=0.805, 
+              world_min_y=-0.25, world_max_y=0.75):
+    """
+    Converts world coordinates (xw, yw) to map coordinates (px, py).
+    """
+    # Calculate scale factors
+    scale_x = map_width / (world_max_x - world_min_x)
+    scale_y = map_height / (world_max_y - world_min_y)
+
+    # Map world coordinates to map indices
+    px = int((xw - world_min_x) * scale_x)
+    py = int((yw - world_min_y) * scale_y)
+
+    # 对 Y 坐标进行翻转
+    py = map_height - 1 - py
+
+    # Clamp indices to map bounds
+    px = max(0, min(map_width - 1, px))
+    py = max(0, min(map_height - 1, py))
+
+    return px, py
+
+
+# Example usage
+xw, yw = -0.195, 0.75  # Example world coordinates
+
+map_indices = world2map(xw, yw)
+print(f"Map indices: {map_indices}")
+
 
 
 
@@ -154,6 +206,7 @@ def determine_direction(gsensors):
 # - perform simulation steps until Webots is stopping the controller
 while robot.step(timestep) != -1:
     # calculate xw, yw and omegaz
+    """
     delta_x = (phildot + phirdot) * r * delta_time / 2
     delta_omegaz = (phirdot - phildot) * r * delta_time / d
     delta_distance += delta_x
@@ -161,13 +214,15 @@ while robot.step(timestep) != -1:
     yw = yw + np.sin(omegaz)*delta_x
     omegaz += delta_omegaz    
     print("err:{} xw:{} yw:{} ".format(np.sqrt(xw**2+yw**2), xw, yw))
+    """
+    calculate_robots_pose_in_world()
     
     # Get sensor values and calculate robot's direction
     gsValues = []
     for i in range(3):
         gsValues.append(gs[i].getValue()) 
     direction = determine_direction(gsValues)
-    print("direction:", direction)
+    # print("direction:", direction)
     
     if (direction == "stop"):
         stop_count += 1
@@ -192,23 +247,72 @@ while robot.step(timestep) != -1:
     leftMotor.setVelocity(phildot)
     rightMotor.setVelocity(phirdot)
     
-    
+    # draw trajectory in display
+    px, py = world2map(xw, yw)
+    print(f"px: {px} py: {py}")
+    display.setColor(0xFF0000)
+    display.drawPixel(px,py)
     # lidar related
     ranges = lidar.getRangeImage()
-    x_r, y_r = [], [] # coordinates in robot's system
-    x_w, y_w = [], [] # coordinates in world's system
-    for i, angle in enumerate(angles):
-        x_i = ranges[i]*np.cos(angle)
-        y_i = ranges[i]*np.sin(angle)
-        x_r.append(x_i)
-        y_r.append(y_i)
-        x_w.append(x_i*np.cos(omegaz) - y_i*np.sin(omegaz) + xw)
-        y_w.append(x_i*np.sin(omegaz) + y_i*np.cos(omegaz) + yw)
     
-    plt.ion()
-    # plt.plot(x_r, y_r, '.') # plot points in robot's coordinates system   
-    plt.plot(x_w, y_w, '.')  # plot points in world's coordinates system
-    plt.pause(0.01)
-    plt.show()
+    # Filter infinite values
+    ranges = np.where(np.isinf(ranges), 100, ranges)  # Replace infinite values with 100
+
+    if 0:
+        w_T_r = np.array([[np.cos(theta),-np.sin(theta), xw],
+                  [np.sin(theta),np.cos(theta), yw],
+                  [0,0,1]])            
+        ranges = np.array(lidar.getRangeImage())
+        ranges[ranges == np.inf] = 100
+        X_r = np.array([ranges*np.cos(angles), 
+                        ranges*np.sin(angles),
+                        np.ones(len(angles))])
+        D = w_T_r @ X_r
+    else:
+        x_r, y_r = [], [] # coordinates in robot's system
+        x_w, y_w = [], [] # coordinates in world's system
+        for i, angle in enumerate(angles):
+            try:
+                # Validate the range value
+                if not np.isfinite(ranges[i]) or abs(ranges[i]) > 1:
+                    #print(f"Skipping invalid range at index {i}: {ranges[i]}")
+                    continue
+                
+                # Robot's coordinate transformation
+                x_i = ranges[i] * np.cos(angle)
+                y_i = ranges[i] * np.sin(angle)
+                x_r.append(x_i)
+                y_r.append(y_i)
+
+                # World's coordinate transformation
+                x_w_s = x_i * np.cos(omegaz) - y_i * np.sin(omegaz) + xw
+                y_w_s = x_i * np.sin(omegaz) + y_i * np.cos(omegaz) + yw
+
+                # Clamp display coordinates
+                #x_w_s = max(0, min(300, x_w_s))
+                #y_w_s = max(0, min(300, y_w_s))
+
+                # Append valid coordinates
+                x_w.append(x_w_s)
+                y_w.append(y_w_s)
+
+                # Debugging output
+                #print(f"i: {i}, ranges[i]: {ranges[i]:.2f}, angle: {angle:.2f}, x_i: {x_i:.2f}, y_i: {y_i:.2f}, omegaz: {omegaz:.2f}")
+
+                # Display pixel
+                #print(f"Drawing pixel at ({x_w_s}, {y_w_s})")
+                display.setColor(0xFFFFFF)
+                px, py = world2map(x_w_s, y_w_s)
+                display.drawPixel(px,py)
+            except Exception as e:
+                print(f"Error at index {i}: {e}")
+                continue
+        
+        plt.ion()
+        # plt.plot(x_r, y_r, '.') # plot points in robot's coordinates system   
+        plt.plot(x_w, y_w, '.')  # plot points in world's coordinates system
+        #plt.pause(0.001)
+        plt.show()
+
 
 # Enter here exit cleanup code.
