@@ -5,12 +5,13 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/devices/robotis/protos/RobotisLds01.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/kitchen/breakfast/protos/BiscuitBox.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/kitchen/breakfast/protos/HoneyJar.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/kitchen/breakfast/protos/JamJar.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.5388787127412912 0.47780480928175834 0.693766745514306 2.038644880971151
-  position 0.2422491831415538 -0.03641229215572349 0.8017359564682897
+  orientation -0.43836848186094574 0.4133432403422134 0.7981105435804796 1.851338635287884
+  position 0.5011345018770565 -1.2953449774559882 2.538134231152658
 }
 TexturedBackground {
 }
@@ -456,12 +457,24 @@ BiscuitBox {
   rotation 0 1 0 -1.5707953071795862
 }
 BiscuitBox {
-  translation 0.361972 0.0747028 0.1
+  translation 0.302637 0.033526 0.1
   rotation 0.35740699927911007 -0.8628559982596194 0.35740699927911007 1.71777
   name "biscuit box(1)"
 }
+JamJar {
+  translation 0.624041 0.152609 0
+}
+BiscuitBox {
+  translation 0.193747 0.522241 0.06
+  rotation 0.6215149473343795 -0.4769049595882678 0.6215149473343795 2.25159
+  name "biscuit box(2)"
+}
 HoneyJar {
-  translation 0.286901 0.44824 7.10543e-15
+  translation 0.258056 0.336223 6.88339e-15
+}
+HoneyJar {
+  translation 0.477174 0.256061 -1.33227e-14
+  name "honey jar(2)"
 }
 HoneyJar {
   translation 0.155728 0.214399 7.54952e-15

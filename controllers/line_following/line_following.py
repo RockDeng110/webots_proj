@@ -5,6 +5,8 @@
 from controller import Robot
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy import signal
+
 
 
 
@@ -203,6 +205,10 @@ print(f"Map indices: {map_indices}")
 # Create a probabilistic occupancy grid map (300x300) initialized to zero
 map = np.zeros((300, 300))
 
+# Define the kernel to grow obstacles
+kernel_size = 30  # Corresponds to robot's radius (tune this value)
+kernel = np.ones((kernel_size, kernel_size))
+
 # Main loop:
 # - perform simulation steps until Webots is stopping the controller
 while robot.step(timestep) != -1:
@@ -323,12 +329,22 @@ while robot.step(timestep) != -1:
             except Exception as e:
                 print(f"Error at index {i}: {e}")
                 continue
-        
+        """
         plt.ion()
         # plt.plot(x_r, y_r, '.') # plot points in robot's coordinates system   
         plt.plot(x_w, y_w, '.')  # plot points in world's coordinates system
         #plt.pause(0.001)
         plt.show()
-
+        """
+    # Perform 2D convolution to compute the configuration space every 100 timesteps
+    if robot.step(timestep) % 100 == 0:
+        cmap = signal.convolve2d(map, kernel, mode='same')
+        cspace = cmap > 0.9  # Threshold to mark obstacles
+        
+        # Visualize the configuration space
+        plt.clf()
+        plt.imshow(cspace, cmap='gray')
+        plt.title("Configuration Space")
+        plt.pause(0.001)
 
 # Enter here exit cleanup code.
