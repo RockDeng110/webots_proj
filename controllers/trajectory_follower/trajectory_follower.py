@@ -88,12 +88,12 @@ plt.show()
 
 
 
-WP = [(0, 0.68), (0.44, 0.68), (0.66, 0.51), (0.35, 0.24), (0.63, 0), (0, 0)]
+WP = [(0, 0.68), (0.44, 0.68), (0.65, 0.52), (0.32, 0.23), (0.63, 0), (0.63, -0.15), (0, -0.15),  (0, 0)]
 index = 0
 
 marker = robot.getFromDef("marker").getField("translation")
 #marker.setSFVec3f([0,0,0.2])
-marker.setSFVec3f([*WP[index],0])
+#marker.setSFVec3f([*WP[index],0])
 
 
 display = robot.getDevice('display')
@@ -216,15 +216,6 @@ kernel = np.ones((kernel_size, kernel_size))
 # - perform simulation steps until Webots is stopping the controller
 while robot.step(timestep) != -1:
     # calculate xw, yw and omegaz
-    """
-    delta_x = (phildot + phirdot) * r * delta_time / 2
-    delta_omegaz = (phirdot - phildot) * r * delta_time / d
-    delta_distance += delta_x
-    xw = xw + np.cos(omegaz)*delta_x
-    yw = yw + np.sin(omegaz)*delta_x
-    omegaz += delta_omegaz    
-    print("err:{} xw:{} yw:{} ".format(np.sqrt(xw**2+yw**2), xw, yw))
-    """
     calculate_robots_pose_in_world()
 
     rho = np.sqrt((xw-WP[index][0])**2+(yw-WP[index][1])**2) 
@@ -232,38 +223,47 @@ while robot.step(timestep) != -1:
     print(f"rho: {rho} alpha: {alpha}")
     if(rho<0.1):
         index=index+1
-        marker.setSFVec3f([*WP[index],0])
+        if(index >= 8):
+            index = 0
+        #marker.setSFVec3f([*WP[index],0])
 
-    # Get sensor values and calculate robot's direction
-    gsValues = []
-    for i in range(3):
-        gsValues.append(gs[i].getValue()) 
-    direction = determine_direction(gsValues)
-    # print("direction:", direction)
-    
-    if (direction == "stop"):
-        stop_count += 1
-        phildot, phirdot = 0.25* MAX_SPEED, 0.25* MAX_SPEED
-        print("stop:{}".format(stop_count))
-        if stop_count >= 10:
-            phildot, phirdot = 0, 0
-            if stop_count > 15:
-                #print("d:{} w:{} error:{}".format(delta_distance, delta_omegaz, np.sqrt(xw**2+yw**2)))
-                break 
-    else:
-        stop_count = 0
-        if (direction == "turn_left"):
-            phildot, phirdot = 0 * MAX_SPEED, 0.5*MAX_SPEED
-        elif (direction == "turn_right"):
-            phildot, phirdot = 0.5 * MAX_SPEED, 0*MAX_SPEED
-        elif (direction == "go_straight"):   
-            phildot, phirdot = MAX_SPEED, MAX_SPEED
+    if 0: # old method to calculate wheel speed
+        # Get sensor values and calculate robot's direction
+        gsValues = []
+        for i in range(3):
+            gsValues.append(gs[i].getValue()) 
+        direction = determine_direction(gsValues)
+        # print("direction:", direction)
+        if (direction == "stop"):
+            stop_count += 1
+            phildot, phirdot = 0.25* MAX_SPEED, 0.25* MAX_SPEED
+            print("stop:{}".format(stop_count))
+            if stop_count >= 10:
+                phildot, phirdot = 0, 0
+                if stop_count > 15:
+                    #print("d:{} w:{} error:{}".format(delta_distance, delta_omegaz, np.sqrt(xw**2+yw**2)))
+                    break 
+        else:
+            stop_count = 0
+            if (direction == "turn_left"):
+                phildot, phirdot = 0 * MAX_SPEED, 0.5*MAX_SPEED
+            elif (direction == "turn_right"):
+                phildot, phirdot = 0.5 * MAX_SPEED, 0*MAX_SPEED
+            elif (direction == "go_straight"):   
+                phildot, phirdot = MAX_SPEED, MAX_SPEED
+                
+        leftMotor.setVelocity(phildot)
+        rightMotor.setVelocity(phirdot)
+    else :
+        p1, p2 = 6.28*3, 62.8
+        leftSpeed = - alpha*p1 + rho*p2
+        rightSpeed = alpha*p1 + rho*p2
+        leftSpeed = max(min(leftSpeed,6.28),-6.28)
+        rightSpeed = max(min(rightSpeed,6.28),-6.28)
+        leftMotor.setVelocity(leftSpeed)
+        rightMotor.setVelocity(rightSpeed)
 
-        
-                     
-    leftMotor.setVelocity(phildot)
-    rightMotor.setVelocity(phirdot)
-    
+
     # draw trajectory in display
     px, py = world2map(xw, yw)
     # print(f"px: {px} py: {py}")
