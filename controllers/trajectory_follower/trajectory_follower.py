@@ -88,10 +88,12 @@ plt.show()
 
 
 
-
+WP = [(0, 0.68), (0.44, 0.68), (0.66, 0.51), (0.35, 0.24), (0.63, 0), (0, 0)]
+index = 0
 
 marker = robot.getFromDef("marker").getField("translation")
-marker.setSFVec3f([0,0,0.2])
+#marker.setSFVec3f([0,0,0.2])
+marker.setSFVec3f([*WP[index],0])
 
 
 display = robot.getDevice('display')
@@ -224,7 +226,14 @@ while robot.step(timestep) != -1:
     print("err:{} xw:{} yw:{} ".format(np.sqrt(xw**2+yw**2), xw, yw))
     """
     calculate_robots_pose_in_world()
-    
+
+    rho = np.sqrt((xw-WP[index][0])**2+(yw-WP[index][1])**2) 
+    alpha = np.arctan2(WP[index][1]-yw,WP[index][0]-xw)-omegaz
+    print(f"rho: {rho} alpha: {alpha}")
+    if(rho<0.1):
+        index=index+1
+        marker.setSFVec3f([*WP[index],0])
+
     # Get sensor values and calculate robot's direction
     gsValues = []
     for i in range(3):
@@ -257,7 +266,7 @@ while robot.step(timestep) != -1:
     
     # draw trajectory in display
     px, py = world2map(xw, yw)
-    print(f"px: {px} py: {py}")
+    # print(f"px: {px} py: {py}")
     display.setColor(0xFF0000)
     display.drawPixel(px,py)
     # lidar related
@@ -337,6 +346,8 @@ while robot.step(timestep) != -1:
         #plt.pause(0.001)
         plt.show()
         """
+
+    """
     # Perform 2D convolution to compute the configuration space every 100 timesteps
     if robot.step(timestep) % 100 == 0:
         cmap = signal.convolve2d(map, kernel, mode='same')
@@ -346,6 +357,7 @@ while robot.step(timestep) != -1:
         plt.clf()
         plt.imshow(cspace, cmap='gray')
         plt.title("Configuration Space")
-        plt.pause(0.001)
+        plt.pause(0.01)
+    """
 
 # Enter here exit cleanup code.
